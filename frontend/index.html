@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0e0c;
+      --surface: #1a1916;
+      --border: #2e2c28;
+      --accent: #e8c547;
+      --accent-dim: #b89d34;
+      --text: #f0ece3;
+      --muted: #7a7670;
+      --danger: #c0392b;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      max-width: 720px;
+      margin: 0 auto 2.5rem;
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+    }
+
+    #note-count {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 300;
+      letter-spacing: 0.05em;
+    }
+
+    .container { max-width: 720px; margin: 0 auto; }
+
+    /* Form */
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .form-card input,
+    .form-card textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      padding: 0.75rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: none;
+    }
+
+    .form-card input { margin-bottom: 0.75rem; font-weight: 500; }
+    .form-card textarea { height: 100px; }
+
+    .form-card input:focus,
+    .form-card textarea:focus { border-color: var(--accent); }
+
+    .form-card input::placeholder,
+    .form-card textarea::placeholder { color: var(--muted); }
+
+    .btn-add {
+      margin-top: 0.75rem;
+      width: 100%;
+      background: var(--accent);
+      color: #0f0e0c;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn-add:hover { background: var(--accent-dim); }
+    .btn-add:active { transform: scale(0.98); }
+
+    /* Notes grid */
+    .notes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 500px) { .notes-grid { grid-template-columns: 1fr; } }
+
+    .note-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem 1.2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      animation: fadeIn 0.3s ease;
+      position: relative;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .note-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .note-content {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.55;
+      flex: 1;
+      word-break: break-word;
+    }
+
+    .note-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+
+    .note-date { font-size: 0.72rem; color: var(--muted); }
+
+    .btn-delete {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-delete:hover { border-color: var(--danger); color: var(--danger); }
+
+    .empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-style: italic;
+      grid-column: 1 / -1;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--accent);
+      color: #0f0e0c;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Notes</h1>
+  <span id="note-count">0 notes</span>
+</header>
+
+<div class="container">
+  <div class="form-card">
+    <input type="text" id="title" placeholder="Note title…" maxlength="80"/>
+    <textarea id="content" placeholder="Write something…"></textarea>
+    <button class="btn-add" onclick="addNote()">+ Add Note</button>
+  </div>
+
+  <div class="notes-grid" id="notes-grid">
+    <p class="empty">No notes yet. Add one above.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = "http://192.168.146.141:3001/api";
+
+  async function loadNotes() {
+    try {
+      const res = await fetch(`${API}/notes`);
+      const notes = await res.json();
+      renderNotes(notes);
+    } catch {
+      showToast('Cannot reach server', true);
+    }
+  }
+
+  function renderNotes(notes) {
+    const grid = document.getElementById('notes-grid');
+    document.getElementById('note-count').textContent = `${notes.length} note${notes.length !== 1 ? 's' : ''}`;
+
+    if (!notes.length) {
+      grid.innerHTML = '<p class="empty">No notes yet. Add one above.</p>';
+      return;
+    }
+
+    grid.innerHTML = notes.map(n => `
+      <div class="note-card" id="note-${n.id}">
+        <div class="note-title">${esc(n.title)}</div>
+        <div class="note-content">${esc(n.content)}</div>
+        <div class="note-footer">
+          <span class="note-date">${new Date(n.createdAt).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})}</span>
+          <button class="btn-delete" onclick="deleteNote('${n.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function addNote() {
+    const title   = document.getElementById('title').value.trim();
+    const content = document.getElementById('content').value.trim();
+    if (!title || !content) return showToast('Title and content are required');
+
+    try {
+      const res = await fetch(`${API}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content })
+      });
+      if (!res.ok) throw new Error();
+      document.getElementById('title').value = '';
+      document.getElementById('content').value = '';
+      showToast('Note saved!');
+      loadNotes();
+    } catch {
+      showToast('Failed to save note');
+    }
+  }
+
+  async function deleteNote(id) {
+    try {
+      await fetch(`${API}/notes/${id}`, { method: 'DELETE' });
+      loadNotes();
+    } catch {
+      showToast('Failed to delete note');
+    }
+  }
+
+  function esc(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  loadNotes();
+</script>
+</body>
+</html>
+
